@@ -3,404 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Ordering Panel</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>TU Management | Material Requisition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --primary: #2563eb; 
-            --primary-light: #eff6ff; 
-            --bg: #f8fafc; 
-            --border: #e2e8f0; 
-            --text-dark: #1e293b;
-            --text-muted: #64748b;
+            --primary: #2563eb; --primary-hover: #1d4ed8;
+            --bg: #f8fafc; --card: #ffffff;
+            --border: #e2e8f0; --text: #1e293b;
+            --text-muted: #64748b; --overlay: rgba(0,0,0,0.6);
+            --success: #166534; --success-bg: #dcfce7;
+            --error: #991b1b; --error-bg: #fee2e2;
+            --radius: 12px;
         }
 
-        * { box-sizing: border-box; }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg); 
-            padding: 10px; 
-            color: var(--text-dark); 
-            margin: 0; 
-            -webkit-font-smoothing: antialiased;
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b;
+            --border: #334155; --text: #f1f5f9;
+            --text-muted: #94a3b8; --primary: #3b82f6;
         }
 
-        .container { 
-            max-width: 800px; 
-            margin: 10px auto; 
-            background: white; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
-        }
+        * { box-sizing: border-box; transition: background 0.2s, border-color 0.2s, color 0.1s; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 10px; color: var(--text); margin: 0; }
 
-        h1 { font-size: 1.5rem; color: var(--primary); margin: 0 0 5px 0; }
-        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
-
-        /* Mobile First Grid: Stacked by default */
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 15px; 
-            margin-bottom: 25px; 
-        }
-
-        /* Desktop View: Two columns */
-        @media (min-width: 640px) {
-            .form-grid { grid-template-columns: 1fr 1fr; }
-            body { padding: 30px 20px; }
-            .container { padding: 30px; }
-            h1 { font-size: 1.8rem; }
-        }
-
-        label { 
-            display: block; 
-            font-weight: 600; 
-            font-size: 0.85rem; 
-            margin-bottom: 6px; 
-            color: var(--text-muted); 
-        }
-
-        /* 16px font prevents auto-zoom on iOS */
-        select, input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1.5px solid var(--border); 
-            border-radius: 8px; 
-            font-size: 16px; 
-            background: #fff;
-            transition: border-color 0.2s;
-        }
-
-        select:focus, input:focus { 
-            border-color: var(--primary); 
-            outline: none; 
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        /* Search & Suggestions */
-        .search-container { position: relative; margin-bottom: 30px; }
-        #itemSearch { border: 2px solid var(--primary); }
+        .container { max-width: 850px; margin: 15px auto; background: var(--card); padding: 25px; border-radius: var(--radius); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
         
-        .suggestions { 
-            position: absolute; 
-            width: 100%; 
-            background: white; 
-            border: 1px solid var(--border); 
-            z-index: 100; 
-            max-height: 250px; 
-            overflow-y: auto; 
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
-            display: none;
-        }
+        .header-section { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; border-bottom: 2px solid var(--bg); padding-bottom: 20px; }
+        .logo { width: 65px; height: 65px; object-fit: contain; border-radius: 10px; background: white; padding: 2px; }
+        h1 { font-size: 1.5rem; color: var(--primary); margin: 0; font-weight: 700; letter-spacing: -0.02em; }
+        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
 
-        .suggestion-item { 
-            padding: 14px; 
-            cursor: pointer; 
-            border-bottom: 1px solid #f1f5f9; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px; }
+        @media (min-width: 640px) { .form-grid { grid-template-columns: 1fr 1fr; } }
 
-        .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover { background: var(--primary-light); }
-        .suggestion-item span { color: var(--text-muted); font-size: 0.75rem; font-weight: 600; }
+        label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; }
+        select, input, textarea { width: 100%; padding: 12px 16px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--card); color: var(--text); outline: none; }
+        select:focus, input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; background: var(--bg); }
+        table { width: 100%; border-collapse: collapse; min-width: 450px; }
+        th { text-align: left; padding: 14px; background: var(--bg); font-size: 0.75rem; color: var(--text-muted); font-weight: 700; border-bottom: 2px solid var(--border); }
+        td { padding: 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; background: var(--card); }
 
-        /* Table Responsiveness */
-        .table-wrapper { 
-            width: 100%;
-            overflow-x: auto; /* Allows horizontal scrolling on small screens */
-            border: 1px solid var(--border); 
-            border-radius: 10px;
-            margin-top: 10px;
-        }
+        .btn { padding: 14px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; transition: 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; width: 100%; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--error); color: white; }
+        .btn-ghost { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
 
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            min-width: 450px; /* Ensures table looks good even on tiny screens */
-        }
+        .suggestions { position: absolute; width: 100%; background: var(--card); z-index: 100; border: 1px solid var(--border); display:none; max-height: 200px; overflow-y: auto; border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .suggestion-item:hover { background: var(--primary); color: white; }
 
-        th { 
-            text-align: left; 
-            padding: 12px; 
-            background: #f8fafc; 
-            font-size: 0.7rem; 
-            text-transform: uppercase; 
-            letter-spacing: 0.05em;
-            color: var(--text-muted); 
-        }
+        #adminView, #loginView { display: none; }
+        .admin-section { margin-bottom: 30px; padding: 20px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border); }
+        .bulk-area { font-family: monospace; font-size: 0.85rem; height: 120px; margin-bottom: 10px; resize: vertical; }
 
-        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-
-        .qty-box { 
-            width: 65px; 
-            text-align: center; 
-            border: 1.5px solid var(--primary); 
-            font-weight: bold; 
-            padding: 6px;
-            border-radius: 6px;
-        }
-
-        .remove-btn { 
-            color: #ef4444; 
-            cursor: pointer; 
-            border: none; 
-            background: #fee2e2; 
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-submit { 
-            background: var(--primary); 
-            color: white; 
-            border: none; 
-            padding: 16px; 
-            width: 100%; 
-            border-radius: 8px; 
-            font-weight: 700; 
-            font-size: 1rem;
-            cursor: pointer; 
-            margin-top: 25px; 
-            transition: transform 0.1s, background 0.2s; 
-        }
-
-        .btn-submit:active { transform: scale(0.98); }
-        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
-
-        #status { 
-            margin-top: 15px; 
-            text-align: center; 
-            padding: 12px; 
-            border-radius: 8px; 
-            display: none; 
-            font-size: 0.9rem;
-            font-weight: 600; 
-        }
+        .theme-toggle { position: fixed; top: 20px; right: 20px; background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; z-index: 1000; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(4px); }
+        .modal { background: var(--card); padding: 30px; border-radius: 15px; width: 95%; max-width: 550px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div style="text-align:center;">
-        <h1>TU Management</h1>
-        <p class="subtitle">Material Requisition Portal</p>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+
+<div id="mainView" class="container">
+    <div class="header-section">
+        <img src="https://media.licdn.com/dms/image/v2/D4D0BAQF5LpEn1jSibg/company-logo_200_200/company-logo_200_200/0/1726892870393/tu_holdings_logo?e=2147483647&v=beta&t=L_jCEOj9nKgleVTRRXBHZtqQJAY-gexE5LVokywa6rU" class="logo" alt="TU Logo">
+        <div>
+            <h1>TU Management</h1>
+            <p class="subtitle">Material Requisition Portal</p>
+        </div>
     </div>
 
     <div class="form-grid">
-        <div>
-            <label>Department</label>
-            <select id="dept" onchange="loadStaff()">
-                <option value="">Select Department...</option>
-            </select>
-        </div>
-        <div>
-            <label>Staff Name</label>
-            <select id="staff">
-                <option value="">Choose Dept first...</option>
-            </select>
-        </div>
+        <div><label>Select Department</label><select id="dept" onchange="loadStaff()"></select></div>
+        <div><label>Employee Name</label><select id="staff"></select></div>
     </div>
 
-    <div class="search-container">
-        <label>Search Inventory Items</label>
-        <input type="text" id="itemSearch" placeholder="🔍 Type item name..." oninput="showSuggestions()" autocomplete="off">
+    <div style="position:relative; margin-bottom: 25px;">
+        <label>Search & Add Inventory Items</label>
+        <input type="text" id="itemSearch" placeholder="Start typing (e.g. 'paper')..." oninput="fuzzySearch()" autocomplete="off">
         <div id="suggestions" class="suggestions"></div>
     </div>
 
-    <label>Current Request List</label>
     <div class="table-wrapper">
         <table>
-            <thead>
-                <tr>
-                    <th>Description</th>
-                    <th>UOM</th>
-                    <th style="width: 90px;">Qty</th>
-                    <th style="width: 50px;"></th>
-                </tr>
-            </thead>
-            <tbody id="orderTable">
-                <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 30px;">No items added yet</td></tr>
-            </tbody>
+            <thead><tr><th>Description</th><th>UOM</th><th style="width:100px">Qty</th><th>Action</th></tr></thead>
+            <tbody id="orderTable"></tbody>
         </table>
     </div>
+    
+    <button class="btn btn-primary" style="margin-top:25px" onclick="openConfirmation()">Review & Submit Request</button>
+    <p style="text-align:center; margin-top:40px;"><button onclick="showLogin()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.75rem;">🔒 System Administrator Login</button></p>
+</div>
 
-    <button class="btn-submit" onclick="submitFinalOrder()" id="submitBtn">Submit Final Request</button>
-    <div id="status"></div>
+<div id="loginView" class="container" style="max-width:400px; margin-top:10vh;">
+    <h2 style="text-align:center; margin-bottom:25px;">Admin Login</h2>
+    <div style="margin-bottom:15px;"><label>User ID</label><input type="text" id="userInp" autocomplete="off" spellcheck="false"></div>
+    <div style="margin-bottom:25px;"><label>Password</label><input type="password" id="passInp" autocomplete="new-password"></div>
+    <button class="btn btn-primary" onclick="handleLogin()">Sign In</button>
+    <button class="btn btn-ghost" style="width:100%; margin-top:10px;" onclick="showMain()">Cancel</button>
+</div>
+
+<div id="adminView" class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">
+        <h2>Management Console</h2>
+        <button class="btn btn-danger" style="padding: 8px 15px;" onclick="handleLogout()">Logout</button>
+    </div>
+
+    <div class="admin-section">
+        <h3>🚀 Bulk Item Upload</h3>
+        <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">Format: <b>Item Name, UOM</b></p>
+        <textarea id="bulkItemsInput" class="bulk-area" placeholder="A4 Paper, BOX&#10;Blue Pen, PKT"></textarea>
+        <button class="btn btn-success" style="width:100%" onclick="adminBulkUpload()">Process Bulk List</button>
+    </div>
+
+    <div class="admin-section">
+        <h3>📦 Inventory Items</h3>
+        <div id="adminItemList" style="max-height:180px; overflow-y:auto; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px;"></div>
+    </div>
+
+    <div class="admin-section">
+        <h3>👥 Staff Management</h3>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <select id="adminDeptSel" style="flex:1"></select>
+            <input type="text" id="newStaffName" placeholder="Full Name" style="flex:1">
+            <button class="btn btn-success" onclick="adminAddStaff()">Add</button>
+        </div>
+        <div id="adminStaffList" style="max-height:150px; overflow-y:auto; padding:10px; background:var(--card); border:1px solid var(--border); border-radius:8px; font-size:0.85rem;"></div>
+    </div>
+
+    <div class="admin-section">
+        <h3>⚙️ Global Settings</h3>
+        <label>Google Apps Script URL</label>
+        <input type="text" id="scriptUrlEdit">
+    </div>
+    
+    <button class="btn btn-primary" onclick="saveAdminChanges()">💾 Save All & Update Portal</button>
+</div>
+
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal">
+        <h2 style="margin-top:0; color:var(--primary);">Confirm Order</h2>
+        <div id="summaryInfo" style="padding:15px; background:var(--bg); border-radius:10px; margin-bottom:15px; font-size:0.9rem;"></div>
+        <ul id="summaryItems" style="padding:0; list-style:none; max-height:180px; overflow-y:auto;"></ul>
+        <div style="display:flex; gap:12px; margin-top:20px;">
+            <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Edit</button>
+            <button id="finalSubmitBtn" class="btn btn-primary" style="flex:2" onclick="submitFinalOrder()">Submit Final Request</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    const APP_CONFIG = {
+    let CONFIG = JSON.parse(localStorage.getItem('TU_REQUISITION_V4')) || {
         departments: {
-            "HR": ["Sulaikha", "Jayesha", "Vins", "Hazel", "Iksan"],
-            "Marketing": ["Erwin", "James", "Lenny", "Tom"],
-            "IT": ["Tom", "Nati"],
-            "PRO": ["Shoukat"],
-            "Operations": ["Anthony", "Adil"],
-            "Accounts": ["Seena Basheer", "Shihab", "Thahir", "Abiram", "Vyshak", "Sorbi"],
-            "Procurement": ["Bimal", "Roshith", "Mahroof", "Raees", "Eranga", "Yasir"]
+            "HR":["Sulaikha","Jayesha","Vins","Hazel","Iksan"],
+            "Marketing":["Erwin","James","Lenny","Tom"],
+            "IT":["Tom","Nati"],
+            "PRO":["Shoukat"],
+            "Operations":["Anthony","Adil"],
+            "Accounts":["Seena Basheer","Shihab","Thahir","Abiram","Vyshak","Sorbi"],
+            "Procurement":["Bimal","Roshith","Mahroof","Raees","Eranga","Yasir"]
         },
         inventory: [
-            { name: "ENVELOPES (115X225) 50PCS/PCKT", uom: "PKT" },
-            { name: "MAXI SHEET PROTECTORS-11 HOLES PUNCHING A4 SIZE-100POUCHES/PER PCKT-MX-AP100", uom: "PKT" },
-            { name: "DOUBLE A4 80 GSM A4 COPY PAPER", uom: "BOX" },
-            { name: "SHARPNER COVER SINGLE HOLE BASSED COLOR DELI NEON", uom: "PCS" },
-            { name: "STAPLE REMOVER /24/6 BOX-12 PCS-DELI", uom: "PCS" },
-            { name: "OKADO OFFICE TAPE 8 ROLLS/38MMX18MMX20Y/SUPER CLEAR", uom: "PCS" },
-            { name: "CELLO FINEGRIP 0.7 MM TXSC PCS BLACK", uom: "box" },
-            { name: "INDEX TAB SIGN HERE 12 CARDS/BOX-MODEST", uom: "PCS" },
-            { name: "DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A5 100 SHEETS-201 X 154MM", uom: "PKT" },
-            { name: "DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A4 216 X 303 MM-100 SHEETS", uom: "PKT" },
-            { name: "STICKY NOTE 1312 YELLOW 38X51MM, 100 SHEETS, 12 PCS/PCKT", uom: "PKT" },
-            { name: "DELUXE CORRECTION PEN 10 ML (X12)", uom: "PCS" },
-            { name: "PENCIL DELI MATE GRAPHITE HB HEXAGONAL SHAPE WITH ERASER 12PCS/PCKT-EU200-HB", uom: "PKT" },
-            { name: "STEEL RULER 30CM", uom: "PCS" },
-            { name: "CORNER ROUND PUNCHER", uom: "PCS" },
-            { name: "DESK ORGANIZER", uom: "PCS" },
-            { name: "UNIBALL BLUE PEN", uom: "PKT" },
-            { name: "UNIBALL BLACK PEN", uom: "PKT" }
+            { name:"ENVELOPES (115X225) 50PCS/PCKT", uom:"PKT" },
+            { name:"DOUBLE A4 80 GSM A4 COPY PAPER", uom:"BOX" }
         ],
-        scriptURL: "https://script.google.com/macros/s/AKfycbxrwhcAgzax2XmTWdnK8W402_y4KjsnAyvShXOC6wsQgOwHj3dm37H7CpLZXzw3GdYu/exec"
+        scriptURL: "https://script.google.com/macros/s/AKfycbzinSFZxhul_w4v-_cMbCjX6s78sY-GOB3EB5CqsaggsPInrY4R_kd3xTqAfdr8uEjj/exec"
     };
 
     let cart = [];
+    let isAdminAuthenticated = false;
 
-    window.onload = () => {
-        const dSelect = document.getElementById('dept');
-        Object.keys(APP_CONFIG.departments).forEach(d => {
-            dSelect.innerHTML += `<option value="${d}">${d}</option>`;
-        });
-    };
+    function showLogin() { 
+        document.getElementById('userInp').value = "";
+        document.getElementById('passInp').value = "";
+        document.getElementById('mainView').style.display='none'; 
+        document.getElementById('loginView').style.display='block'; 
+    }
+
+    function showMain() { 
+        document.getElementById('loginView').style.display='none'; 
+        document.getElementById('adminView').style.display='none'; 
+        document.getElementById('mainView').style.display='block'; 
+        initApp(); 
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('userInp').value;
+        const p = document.getElementById('passInp').value;
+        if(u === 'admin' && p === 'Admin@123*') {
+            isAdminAuthenticated = true;
+            document.getElementById('loginView').style.display='none';
+            document.getElementById('adminView').style.display='block';
+            initAdmin();
+        } else { alert("Invalid Credentials"); }
+    }
+
+    function handleLogout() { isAdminAuthenticated = false; showMain(); }
+
+    function initApp() {
+        const dSel = document.getElementById('dept');
+        dSel.innerHTML = '<option value="">Select Department...</option>';
+        Object.keys(CONFIG.departments).sort().forEach(d => dSel.innerHTML += `<option value="${d}">${d}</option>`);
+        renderCart();
+    }
 
     function loadStaff() {
         const d = document.getElementById('dept').value;
         const s = document.getElementById('staff');
         s.innerHTML = '<option value="">Select Name...</option>';
-        if (APP_CONFIG.departments[d]) {
-            APP_CONFIG.departments[d].forEach(name => {
-                s.innerHTML += `<option value="${name}">${name}</option>`;
+        if(CONFIG.departments[d]) CONFIG.departments[d].sort().forEach(n => s.innerHTML += `<option value="${n}">${n}</option>`);
+    }
+
+    function fuzzySearch() {
+        const q = document.getElementById('itemSearch').value.toLowerCase();
+        const box = document.getElementById('suggestions');
+        box.innerHTML = "";
+        if(q.length < 1) { box.style.display='none'; return; }
+        const res = CONFIG.inventory.filter(item => {
+            let i=0; const t = item.name.toLowerCase();
+            for (let c of t) { if(c === q[i]) i++; if(i === q.length) return true; }
+            return false;
+        });
+        if(res.length > 0) {
+            box.style.display='block';
+            res.forEach(item => {
+                const d = document.createElement('div');
+                d.className = 'suggestion-item';
+                d.innerHTML = `<span><strong>${item.name}</strong></span> <small style="color:var(--primary)">${item.uom}</small>`;
+                d.onclick = () => { if(cart.find(c=>c.name===item.name)) return; cart.push({...item, qty:1}); renderCart(); box.style.display='none'; document.getElementById('itemSearch').value=''; };
+                box.appendChild(d);
             });
         }
-    }
-
-    function showSuggestions() {
-        const input = document.getElementById('itemSearch').value.toLowerCase();
-        const sugBox = document.getElementById('suggestions');
-        sugBox.innerHTML = "";
-        
-        if (input.length < 1) { sugBox.style.display = "none"; return; }
-
-        const filtered = APP_CONFIG.inventory.filter(i => i.name.toLowerCase().includes(input));
-        
-        if (filtered.length > 0) {
-            sugBox.style.display = "block";
-            filtered.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `<div><strong>${item.name}</strong></div> <span>${item.uom}</span>`;
-                div.onclick = () => addToCart(item);
-                sugBox.appendChild(div);
-            });
-        } else {
-            sugBox.style.display = "none";
-        }
-    }
-
-    function addToCart(item) {
-        if (cart.find(c => c.name === item.name)) {
-            alert("Item already in list!");
-        } else {
-            cart.push({ ...item, qty: 1 });
-            renderCart();
-        }
-        document.getElementById('itemSearch').value = "";
-        document.getElementById('suggestions').style.display = "none";
-    }
-
-    function removeFromCart(index) {
-        cart.splice(index, 1);
-        renderCart();
-    }
-
-    function updateQty(index, val) {
-        if (val < 1) val = 1;
-        cart[index].qty = val;
     }
 
     function renderCart() {
-        const tbody = document.getElementById('orderTable');
-        if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 30px;">No items added yet</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = '';
-        cart.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${item.name}</strong></td>
-                <td style="color:#64748b; font-size:0.8rem;">${item.uom}</td>
-                <td><input type="number" class="qty-box" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)"></td>
-                <td><button class="remove-btn" onclick="removeFromCart(${index})">🗑️</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
+        const b = document.getElementById('orderTable');
+        b.innerHTML = cart.length === 0 ? '<tr><td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">List is empty.</td></tr>' : '';
+        cart.forEach((item, i) => b.innerHTML += `<tr><td><b>${item.name}</b></td><td>${item.uom}</td><td><input type="number" value="${item.qty}" min="1" onchange="cart[${i}].qty=this.value" style="width:70px;"></td><td><button onclick="cart.splice(${i},1);renderCart()" style="color:var(--error); border:none; background:none; cursor:pointer;">🗑️</button></td></tr>`);
     }
 
-    async function submitFinalOrder() {
-        const btn = document.getElementById('submitBtn');
-        const status = document.getElementById('status');
-        const dept = document.getElementById('dept').value;
-        const staff = document.getElementById('staff').value;
+    function initAdmin() {
+        if(!isAdminAuthenticated) return showMain();
+        document.getElementById('scriptUrlEdit').value = CONFIG.scriptURL;
+        const aDS = document.getElementById('adminDeptSel'); aDS.innerHTML = "";
+        Object.keys(CONFIG.departments).sort().forEach(d => aDS.innerHTML += `<option value="${d}">${d}</option>`);
+        renderAdminList(); renderAdminStaff();
+    }
 
-        if (!dept || !staff || cart.length === 0) {
-            alert("Please select Department, Staff Name, and add at least one item.");
-            return;
-        }
+    function adminBulkUpload() {
+        const input = document.getElementById('bulkItemsInput').value;
+        const lines = input.split('\n');
+        lines.forEach(line => {
+            const pts = line.split(',');
+            if(pts.length >= 2) {
+                const name = pts[0].trim().toUpperCase(), uom = pts[1].trim().toUpperCase();
+                if(name && uom && !CONFIG.inventory.find(i=>i.name===name)) CONFIG.inventory.push({name, uom});
+            }
+        });
+        document.getElementById('bulkItemsInput').value = "";
+        renderAdminList();
+    }
+
+    function renderAdminList() {
+        const l = document.getElementById('adminItemList');
+        l.innerHTML = CONFIG.inventory.map((item, i) => `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid var(--border)"><span>${item.name} (${item.uom})</span><button onclick="CONFIG.inventory.splice(${i},1);renderAdminList()" style="color:var(--error); border:none; background:none; cursor:pointer;">Remove</button></div>`).join('');
+    }
+
+    function renderAdminStaff() {
+        const l = document.getElementById('adminStaffList'); let h = "";
+        for (let d in CONFIG.departments) { h += `<div style="margin-bottom:12px"><b>${d}:</b><br>${CONFIG.departments[d].map((n, i) => `<span style="background:var(--bg); padding:2px 6px; border-radius:4px; margin:2px; display:inline-block">${n} <i onclick="CONFIG.departments['${d}'].splice(${i},1);renderAdminStaff()" style="color:red; cursor:pointer; font-style:normal; margin-left:4px;">×</i></span>`).join('')}</div>`; }
+        l.innerHTML = h;
+    }
+
+    function adminAddStaff() {
+        const d = document.getElementById('adminDeptSel').value, n = document.getElementById('newStaffName').value;
+        if(n) { CONFIG.departments[d].push(n); document.getElementById('newStaffName').value = ""; renderAdminStaff(); }
+    }
+
+    function saveAdminChanges() { CONFIG.scriptURL = document.getElementById('scriptUrlEdit').value; localStorage.setItem('TU_REQUISITION_V4', JSON.stringify(CONFIG)); alert("Saved."); handleLogout(); }
+
+    function openConfirmation() {
+        const d = document.getElementById('dept').value, s = document.getElementById('staff').value;
+        if(!d || !s || cart.length === 0) return alert("Please fill all details.");
+        document.getElementById('summaryInfo').innerHTML = `<b>Requestor:</b> ${s}<br><b>Dept:</b> ${d}`;
+        document.getElementById('summaryItems').innerHTML = cart.map(i => `<li style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border)"><span>${i.name}</span> <b>${i.qty} ${i.uom}</b></li>`).join('');
+        document.getElementById('confirmModal').style.display='flex';
+    }
+    
+    function closeModal() { document.getElementById('confirmModal').style.display='none'; }
+    function toggleTheme() { document.body.setAttribute('data-theme', document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark'); }
+
+    async function submitFinalOrder() {
+        const btn = document.getElementById('finalSubmitBtn');
+        const payload = {
+            dept: document.getElementById('dept').value,
+            name: document.getElementById('staff').value,
+            items: cart
+        };
 
         btn.disabled = true;
-        btn.innerText = "Processing...";
-        status.style.display = "block";
-        status.style.background = "#f1f5f9";
-        status.style.color = "#475569";
-        status.innerText = "Syncing with Office Records...";
+        btn.innerHTML = "Sending...";
 
         try {
-            await fetch(APP_CONFIG.scriptURL, {
+            await fetch(CONFIG.scriptURL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ department: dept, name: staff, items: cart })
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            status.style.background = "#dcfce7";
-            status.style.color = "#166534";
-            status.innerText = "✅ Submitted Successfully!";
-            cart = [];
-            renderCart();
-            btn.innerText = "Request Sent";
-            
             setTimeout(() => {
-                btn.disabled = false;
-                btn.innerText = "Submit Final Request";
-                status.style.display = "none";
-            }, 5000);
+                alert("✅ Requisition Submitted Successfully!");
+                location.reload();
+            }, 1000);
 
         } catch (e) {
-            status.style.background = "#fee2e2";
-            status.style.color = "#991b1b";
-            status.innerText = "❌ Error. Check connection and try again.";
+            console.error("Submission error:", e);
+            alert("❌ Connection Error. Check your Script URL.");
             btn.disabled = false;
             btn.innerText = "Retry Submission";
         }
     }
-</script>
 
+    window.onload = initApp;
+</script>
 </body>
 </html>
