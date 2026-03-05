@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Ordering Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2563eb; --primary-light: #eff6ff; --bg: #f8fafc; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); padding: 20px; color: #1e293b; margin: 0; }
+        .container { max-width: 800px; margin: 20px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; color: #64748b; }
+        select, input { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; }
+        select:focus, input:focus { border-color: var(--primary); outline: none; }
+
+        /* Search Section */
+        .search-container { position: relative; margin-bottom: 30px; }
+        #itemSearch { border: 2px solid var(--primary); background: #fff; }
+        .suggestions { 
+            position: absolute; width: 100%; background: white; border: 1px solid var(--border); 
+            z-index: 100; max-height: 250px; overflow-y: auto; border-radius: 0 0 8px 8px;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1); display: none;
+        }
+        .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+        .suggestion-item:hover { background: var(--primary-light); color: var(--primary); }
+        .suggestion-item span { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* Table */
+        .table-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); }
+        .qty-box { width: 70px; text-align: center; border: 1px solid var(--primary); font-weight: bold; }
+        .remove-btn { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 1.2rem; }
+
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 16px; width: 100%; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 25px; transition: 0.2s; }
+        .btn-submit:hover { background: #1d4ed8; }
+        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
+        #status { margin-top: 15px; text-align: center; padding: 12px; border-radius: 8px; display: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align:center; margin-bottom:30px;">
+        <h1 style="color:var(--primary); margin:0;">TU Management Material Requisition</h1>
+        <p style="color:#64748b;">Search for items and add them to your request</p>
+    </div>
+
+    <div class="form-grid">
+        <div>
+            <label>Department</label>
+            <select id="dept" onchange="loadStaff()">
+                <option value="">Select Department...</option>
+            </select>
+        </div>
+        <div>
+            <label>Staff Name</label>
+            <select id="staff">
+                <option value="">Choose Dept first...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <label>Add Item to Order</label>
+        <input type="text" id="itemSearch" placeholder="🔍 Search item description..." oninput="showSuggestions()" autocomplete="off">
+        <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <label>Selected Items List</label>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item Description</th>
+                    <th>UOM</th>
+                    <th style="width: 80px;">Qty</th>
+                    <th style="width: 40px;"></th>
+                </tr>
+            </thead>
+            <tbody id="orderTable">
+                </tbody>
+        </table>
+    </div>
+
+    <button class="btn-submit" onclick="submitFinalOrder()" id="submitBtn">Submit Final Request</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    // --- DATA CONFIGURATION ---
+    const APP_CONFIG = {
+        departments: {
+			"HR":["Sulaikha","Jayesha","Vins","Hazel","Iksan"],
+			"Marketing":["Erwin","James","Lenny","Tom",],
+			"IT":["Tom","Nati"],
+			"PRO":["Shoukat"],
+			"Operations":["Anthony","Adil"],
+			"Accounts":["Seena Basheer","Shihab","Thahir","Abiram","Vyshak","Sorbi"],
+			"Procurement":["Bimal","Roshith","Mahroof","Raees","Eranga","Yasir"]
+
+        },
+        inventory: [
+            { name:"ENVELOPES (115X225) 50PCS/PCKT", uom:"PKT" },
+			{ name:"MAXI SHEET PROTECTORS-11 HOLES PUNCHING A4 SIZE-100POUCHES/PER PCKT-MX-AP100", uom:"PKT" },
+			{ name:"DOUBLE A4 80 GSM A4 COPY PAPER", uom:"BOX" },
+			{ name:"SHARPNER COVER SINGLE HOLE BASSED COLOR DELI NEON", uom:"PCS" },
+			{ name:"STAPLE REMOVER /24/6 BOX-12 PCS-DELI", uom:"PCS" },
+			{ name:"OKADO OFFICE TAPE 8 ROLLS/38MMX18MMX20Y/SUPER CLEAR", uom:"PCS" },
+			{ name:"CELLO FINEGRIP 0.7 MM TXSC PCS BLACK", uom:"box" },
+			{ name:"INDEX TAB SIGN HERE 12 CARDS/BOX-MODEST", uom:"PCS" },
+			{ name:"DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A5 100 SHEETS-201 X 154MM", uom:"PKT" },
+			{ name:"DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A4 216 X 303 MM-100 SHEETS", uom:"PKT" },
+			{ name:"STICKY NOTE 1312 YELLOW 38X51MM, 100 SHEETS, 12 PCS/PCKT", uom:"PKT" },
+			{ name:"DELUXE CORRECTION PEN 10 ML (X12)", uom:"PCS" },
+			{ name:"PENCIL DELI MATE GRAPHITE HB HEXAGONAL SHAPE WITH ERASER 12PCS/PCKT-EU200-HB", uom:"PKT" },
+			{ name:"STEEL RULER 30CM", uom:"PCS" },
+			{ name:"CORNER ROUND PUNCHER", uom:"PCS" },
+			{ name:"DESK ORGANIZER", uom:"PCS" },
+			{ name:"UNIBALL BLUE PEN", uom:"PKT" },
+			{ name:"UNIBALL BLACK PEN", uom:"PKT" }
+        ],
+        scriptURL: "https://script.google.com/macros/s/AKfycbxrwhcAgzax2XmTWdnK8W402_y4KjsnAyvShXOC6wsQgOwHj3dm37H7CpLZXzw3GdYu/exec"
+    };
+
+    let cart = [];
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+        const dSelect = document.getElementById('dept');
+        Object.keys(APP_CONFIG.departments).forEach(d => {
+            dSelect.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+    };
+
+    function loadStaff() {
+        const d = document.getElementById('dept').value;
+        const s = document.getElementById('staff');
+        s.innerHTML = '<option value="">Select Name...</option>';
+        if(APP_CONFIG.departments[d]) {
+            APP_CONFIG.departments[d].forEach(name => {
+                s.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+    }
+
+    // --- SEARCH LOGIC ---
+    function showSuggestions() {
+        const input = document.getElementById('itemSearch').value.toLowerCase();
+        const sugBox = document.getElementById('suggestions');
+        sugBox.innerHTML = "";
+        
+        if (input.length < 1) { sugBox.style.display = "none"; return; }
+
+        const filtered = APP_CONFIG.inventory.filter(i => i.name.toLowerCase().includes(input));
+        
+        if (filtered.length > 0) {
+            sugBox.style.display = "block";
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `<strong>${item.name}</strong> <span>${item.uom}</span>`;
+                div.onclick = () => addToCart(item);
+                sugBox.appendChild(div);
+            });
+        } else {
+            sugBox.style.display = "none";
+        }
+    }
+
+    function addToCart(item) {
+        // Prevent duplicates
+        if (cart.find(c => c.name === item.name)) {
+            alert("Item already in list!");
+        } else {
+            cart.push({ ...item, qty: 1 });
+            renderCart();
+        }
+        document.getElementById('itemSearch').value = "";
+        document.getElementById('suggestions').style.display = "none";
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function updateQty(index, val) {
+        if (val < 1) val = 1;
+        cart[index].qty = val;
+    }
+
+    function renderCart() {
+        const tbody = document.getElementById('orderTable');
+        tbody.innerHTML = cart.length === 0 ? '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">No items added yet</td></tr>' : '';
+        
+        cart.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${item.name}</strong></td>
+                    <td style="color:#64748b; font-size:0.85rem;">${item.uom}</td>
+                    <td><input type="number" class="qty-box" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)"></td>
+                    <td><button class="remove-btn" onclick="removeFromCart(${index})">🗑️</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    // --- SUBMISSION ---
+    async function submitFinalOrder() {
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const dept = document.getElementById('dept').value;
+        const staff = document.getElementById('staff').value;
+
+        if (!dept || !staff || cart.length === 0) {
+            alert("Please select Dept, Staff, and add at least one item.");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Sending Request...";
+        status.style.display = "block";
+        status.style.background = "#f1f5f9";
+        status.innerText = "Syncing with Google Sheets...";
+
+        try {
+            await fetch(APP_CONFIG.scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ department: dept, name: staff, items: cart })
+            });
+
+            status.style.background = "#dcfce7";
+            status.style.color = "#166534";
+            status.innerText = "✅ Order successfully submitted to the office!";
+            cart = [];
+            renderCart();
+            btn.innerText = "Submitted!";
+        } catch (e) {
+            status.style.background = "#fee2e2";
+            status.innerText = "❌ Error. Check your connection.";
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>
