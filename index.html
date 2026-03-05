@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Ordering Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #2563eb; 
+            --primary-light: #eff6ff; 
+            --bg: #f8fafc; 
+            --border: #e2e8f0; 
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            padding: 10px; 
+            color: var(--text-dark); 
+            margin: 0; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { 
+            max-width: 800px; 
+            margin: 10px auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
+        }
+
+        h1 { font-size: 1.5rem; color: var(--primary); margin: 0 0 5px 0; }
+        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px; }
+
+        /* Mobile First Grid: Stacked by default */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+            margin-bottom: 25px; 
+        }
+
+        /* Desktop View: Two columns */
+        @media (min-width: 640px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            body { padding: 30px 20px; }
+            .container { padding: 30px; }
+            h1 { font-size: 1.8rem; }
+        }
+
+        label { 
+            display: block; 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            margin-bottom: 6px; 
+            color: var(--text-muted); 
+        }
+
+        /* 16px font prevents auto-zoom on iOS */
+        select, input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1.5px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 16px; 
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus { 
+            border-color: var(--primary); 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Search & Suggestions */
+        .search-container { position: relative; margin-bottom: 30px; }
+        #itemSearch { border: 2px solid var(--primary); }
+        
+        .suggestions { 
+            position: absolute; 
+            width: 100%; 
+            background: white; 
+            border: 1px solid var(--border); 
+            z-index: 100; 
+            max-height: 250px; 
+            overflow-y: auto; 
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
+            display: none;
+        }
+
+        .suggestion-item { 
+            padding: 14px; 
+            cursor: pointer; 
+            border-bottom: 1px solid #f1f5f9; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: var(--primary-light); }
+        .suggestion-item span { color: var(--text-muted); font-size: 0.75rem; font-weight: 600; }
+
+        /* Table Responsiveness */
+        .table-wrapper { 
+            width: 100%;
+            overflow-x: auto; /* Allows horizontal scrolling on small screens */
+            border: 1px solid var(--border); 
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 450px; /* Ensures table looks good even on tiny screens */
+        }
+
+        th { 
+            text-align: left; 
+            padding: 12px; 
+            background: #f8fafc; 
+            font-size: 0.7rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em;
+            color: var(--text-muted); 
+        }
+
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+
+        .qty-box { 
+            width: 65px; 
+            text-align: center; 
+            border: 1.5px solid var(--primary); 
+            font-weight: bold; 
+            padding: 6px;
+            border-radius: 6px;
+        }
+
+        .remove-btn { 
+            color: #ef4444; 
+            cursor: pointer; 
+            border: none; 
+            background: #fee2e2; 
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-submit { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 16px; 
+            width: 100%; 
+            border-radius: 8px; 
+            font-weight: 700; 
+            font-size: 1rem;
+            cursor: pointer; 
+            margin-top: 25px; 
+            transition: transform 0.1s, background 0.2s; 
+        }
+
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        #status { 
+            margin-top: 15px; 
+            text-align: center; 
+            padding: 12px; 
+            border-radius: 8px; 
+            display: none; 
+            font-size: 0.9rem;
+            font-weight: 600; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align:center;">
+        <h1>TU Management</h1>
+        <p class="subtitle">Material Requisition Portal</p>
+    </div>
+
+    <div class="form-grid">
+        <div>
+            <label>Department</label>
+            <select id="dept" onchange="loadStaff()">
+                <option value="">Select Department...</option>
+            </select>
+        </div>
+        <div>
+            <label>Staff Name</label>
+            <select id="staff">
+                <option value="">Choose Dept first...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <label>Search Inventory Items</label>
+        <input type="text" id="itemSearch" placeholder="🔍 Type item name..." oninput="showSuggestions()" autocomplete="off">
+        <div id="suggestions" class="suggestions"></div>
+    </div>
+
+    <label>Current Request List</label>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>UOM</th>
+                    <th style="width: 90px;">Qty</th>
+                    <th style="width: 50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="orderTable">
+                <tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 30px;">No items added yet</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <button class="btn-submit" onclick="submitFinalOrder()" id="submitBtn">Submit Final Request</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    const APP_CONFIG = {
+        departments: {
+            "HR": ["Sulaikha", "Jayesha", "Vins", "Hazel", "Iksan"],
+            "Marketing": ["Erwin", "James", "Lenny", "Tom"],
+            "IT": ["Tom", "Nati"],
+            "PRO": ["Shoukat"],
+            "Operations": ["Anthony", "Adil"],
+            "Accounts": ["Seena Basheer", "Shihab", "Thahir", "Abiram", "Vyshak", "Sorbi"],
+            "Procurement": ["Bimal", "Roshith", "Mahroof", "Raees", "Eranga", "Yasir"]
+        },
+        inventory: [
+            { name: "ENVELOPES (115X225) 50PCS/PCKT", uom: "PKT" },
+            { name: "MAXI SHEET PROTECTORS-11 HOLES PUNCHING A4 SIZE-100POUCHES/PER PCKT-MX-AP100", uom: "PKT" },
+            { name: "DOUBLE A4 80 GSM A4 COPY PAPER", uom: "BOX" },
+            { name: "SHARPNER COVER SINGLE HOLE BASSED COLOR DELI NEON", uom: "PCS" },
+            { name: "STAPLE REMOVER /24/6 BOX-12 PCS-DELI", uom: "PCS" },
+            { name: "OKADO OFFICE TAPE 8 ROLLS/38MMX18MMX20Y/SUPER CLEAR", uom: "PCS" },
+            { name: "CELLO FINEGRIP 0.7 MM TXSC PCS BLACK", uom: "box" },
+            { name: "INDEX TAB SIGN HERE 12 CARDS/BOX-MODEST", uom: "PCS" },
+            { name: "DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A5 100 SHEETS-201 X 154MM", uom: "PKT" },
+            { name: "DELUXE LAMINATION POUCH 125 MIC FILMS THICKNESS A4 216 X 303 MM-100 SHEETS", uom: "PKT" },
+            { name: "STICKY NOTE 1312 YELLOW 38X51MM, 100 SHEETS, 12 PCS/PCKT", uom: "PKT" },
+            { name: "DELUXE CORRECTION PEN 10 ML (X12)", uom: "PCS" },
+            { name: "PENCIL DELI MATE GRAPHITE HB HEXAGONAL SHAPE WITH ERASER 12PCS/PCKT-EU200-HB", uom: "PKT" },
+            { name: "STEEL RULER 30CM", uom: "PCS" },
+            { name: "CORNER ROUND PUNCHER", uom: "PCS" },
+            { name: "DESK ORGANIZER", uom: "PCS" },
+            { name: "UNIBALL BLUE PEN", uom: "PKT" },
+            { name: "UNIBALL BLACK PEN", uom: "PKT" }
+        ],
+        scriptURL: "https://script.google.com/macros/s/AKfycbxrwhcAgzax2XmTWdnK8W402_y4KjsnAyvShXOC6wsQgOwHj3dm37H7CpLZXzw3GdYu/exec"
+    };
+
+    let cart = [];
+
+    window.onload = () => {
+        const dSelect = document.getElementById('dept');
+        Object.keys(APP_CONFIG.departments).forEach(d => {
+            dSelect.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+    };
+
+    function loadStaff() {
+        const d = document.getElementById('dept').value;
+        const s = document.getElementById('staff');
+        s.innerHTML = '<option value="">Select Name...</option>';
+        if (APP_CONFIG.departments[d]) {
+            APP_CONFIG.departments[d].forEach(name => {
+                s.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        }
+    }
+
+    function showSuggestions() {
+        const input = document.getElementById('itemSearch').value.toLowerCase();
+        const sugBox = document.getElementById('suggestions');
+        sugBox.innerHTML = "";
+        
+        if (input.length < 1) { sugBox.style.display = "none"; return; }
+
+        const filtered = APP_CONFIG.inventory.filter(i => i.name.toLowerCase().includes(input));
+        
+        if (filtered.length > 0) {
+            sugBox.style.display = "block";
+            filtered.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `<div><strong>${item.name}</strong></div> <span>${item.uom}</span>`;
+                div.onclick = () => addToCart(item);
+                sugBox.appendChild(div);
+            });
+        } else {
+            sugBox.style.display = "none";
+        }
+    }
+
+    function addToCart(item) {
+        if (cart.find(c => c.name === item.name)) {
+            alert("Item already in list!");
+        } else {
+            cart.push({ ...item, qty: 1 });
+            renderCart();
+        }
+        document.getElementById('itemSearch').value = "";
+        document.getElementById('suggestions').style.display = "none";
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function updateQty(index, val) {
+        if (val < 1) val = 1;
+        cart[index].qty = val;
+    }
+
+    function renderCart() {
+        const tbody = document.getElementById('orderTable');
+        if (cart.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding: 30px;">No items added yet</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        cart.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${item.name}</strong></td>
+                <td style="color:#64748b; font-size:0.8rem;">${item.uom}</td>
+                <td><input type="number" class="qty-box" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)"></td>
+                <td><button class="remove-btn" onclick="removeFromCart(${index})">🗑️</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function submitFinalOrder() {
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const dept = document.getElementById('dept').value;
+        const staff = document.getElementById('staff').value;
+
+        if (!dept || !staff || cart.length === 0) {
+            alert("Please select Department, Staff Name, and add at least one item.");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+        status.style.display = "block";
+        status.style.background = "#f1f5f9";
+        status.style.color = "#475569";
+        status.innerText = "Syncing with Office Records...";
+
+        try {
+            await fetch(APP_CONFIG.scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ department: dept, name: staff, items: cart })
+            });
+
+            status.style.background = "#dcfce7";
+            status.style.color = "#166534";
+            status.innerText = "✅ Submitted Successfully!";
+            cart = [];
+            renderCart();
+            btn.innerText = "Request Sent";
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = "Submit Final Request";
+                status.style.display = "none";
+            }, 5000);
+
+        } catch (e) {
+            status.style.background = "#fee2e2";
+            status.style.color = "#991b1b";
+            status.innerText = "❌ Error. Check connection and try again.";
+            btn.disabled = false;
+            btn.innerText = "Retry Submission";
+        }
+    }
+</script>
+
+</body>
+</html>
